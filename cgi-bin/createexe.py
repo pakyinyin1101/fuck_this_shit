@@ -32,7 +32,29 @@ def create_login_database(db_file):
 		print'login table exist'
 	return conn
 
-connection=create_login_database('login_db.sqite')
+def check_login_name(conn,user):
+	cur=conn.cursor()
+	sql='''SELECT USERNAME FROM LOGINDATA;'''
+	cur.execute(sql)
+	dbusername=cur.fetchone()
+	if(dbusername == None):
+		print 'valid account'
+		return 1
+	idlist=set(id.lower() for id in dbusername)
+	if user.lower() in idlist:
+		print 'exist username'
+		return 0
+	else:
+		print'valid account'
+		return 1
+
+def insert_login_data(conn,user,word):
+	sql='''INSERT INTO LOGINDATA(USERNAME,PASSWORD) VALUES(?,?);'''
+	conn.cursor().execute(sql,[user,word])
+	conn.commit()
+	print'insert success!'
+
+conn=create_login_database('login_db.sqite')
 form=cgi.FieldStorage()
 try:
 	sendusername=form.getvalue('username',None)
@@ -54,7 +76,7 @@ except IndexError:
 	sendrepassword=None
 
 print sendrepassword
-
+state=2
 if(sendpassword!= sendrepassword):
 	print'password is not equal to sendrepassword!<br/>'
 if(sendusername == None):
@@ -71,8 +93,27 @@ if(sendusername ==None or sendrepassword==None or sendpassword== None or sendpas
 	 	Please fill in again!
 	 	Go to<input type ="submit" value="register" name="submit" />
 		</form>'''
-#else:
-	#check_login
+else:
+	state=check_login_name(conn,sendusername)
+
+if(state==0):
+	print'exist username!<br/>'
+	print'''<form action="create.py" method="post">
+	 	Please fill in again!
+	 	Go to<input type ="submit" value="register" name="submit" />
+		</form>'''
+if(state==1):
+	insert_login_data(conn,sendusername,sendpassword)
+	print'account success create!<br/>'
+	print'''<form action="login.py" method="post">
+	 	Go to<input type ="submit" value="login" name="submit" />
+		</form>
+		<form action="create.py" method="post">
+	 	Create another account?<input type ="submit" value="register" name="submit" />
+		</form>
+		'''
+
 print'success'
 
 print'</body></html>'
+
